@@ -38,6 +38,7 @@ docker package repository:
     - name: deb https://get.docker.com/ubuntu docker main
     - humanname: Old Docker Package Repository
     - keyid: d8576a8ba88d21e9
+    - keyserver: {% docker.repo_keyserver %}
 {%- else %}
 purge old packages:
   pkgrepo.absent:
@@ -51,12 +52,15 @@ purge old packages:
 
 docker package repository:
   pkgrepo.managed:
-    - name: deb https://apt.dockerproject.org/repo {{ grains["os"]|lower }}-{{ grains["oscodename"] }} main
-    - humanname: {{ grains["os"] }} {{ grains["oscodename"]|capitalize }} Docker Package Repository
-    - keyid: 58118E89F3A912897C070ADBF76221572C52609D
+    - name: {% docker.repo_name %}
+    - humanname: {% docker.repo_humanname %}
+{% if docker.repo_keyurl %}
+    - keyurl: {% docker.repo_keyurl %}
+{% else %}
+    - keyid: {% docker.repo_keyid %}
+    - keyserver: {% docker.repo_keyserver %}
 {%- endif %}
-    - keyserver: hkp://p80.pool.sks-keyservers.net:80
-    - file: /etc/apt/sources.list.d/docker.list
+    - file: {% docker.repo_file %}
     - refresh_db: True
 {%- endif %}
 
