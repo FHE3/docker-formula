@@ -6,13 +6,13 @@
 {% endif %}
   "hosts": {{ docker.daemon.hosts }},
 {% if "tlscert" in docker.daemon %}
-  "tlscert": {{ docker.daemon.tlscert }},
+  "tlscert": "{{ docker.daemon.tlscert }}",
 {% endif %}
 {% if "tlskey" in docker.daemon %}
-  "tlskey": {{ docker.daemon.tlskey }},
+  "tlskey": "{{ docker.daemon.tlskey }}",
 {% endif %}
 {% if "tlscacert" in docker.daemon %}
-  "tlscacert": {{ docker.daemon.tlscacert }},
+  "tlscacert": "{{ docker.daemon.tlscacert }}",
 {% endif %}
   "bip": "{{ docker.daemon.bip }}",
   "fixed-cidr": "{{ docker.daemon.fixed_cidr }}"
