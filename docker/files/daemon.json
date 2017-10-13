@@ -15,5 +15,11 @@
   "tlscacert": "{{ docker.daemon.tlscacert }}",
 {% endif %}
   "bip": "{{ docker.daemon.bip }}",
-  "fixed-cidr": "{{ docker.daemon.fixed_cidr }}"
+  "fixed-cidr": "{{ docker.daemon.fixed_cidr }}",
+  "storage-driver": "devicemapper",
+  "storage-opts": [
+    "dm.thinpooldev={{ docker.daemon.dm_thinpooldev }}",
+    "dm.use_deferred_removal=true",
+    "dm.use_deferred_deletion=true"
+  ]
 }
