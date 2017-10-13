@@ -18,7 +18,6 @@
   "fixed-cidr": "{{ docker.daemon.fixed_cidr }}",
   "storage-driver": "devicemapper",
   "storage-opts": [
-  "storage-opts": [
     "dm.thinpooldev={{ docker.daemon.thinpooldev }}",
     "dm.use_deferred_removal=true",
     "dm.use_deferred_deletion=true"
