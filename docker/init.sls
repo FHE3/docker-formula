@@ -15,55 +15,13 @@ docker package dependencies:
       - ca-certificates
 
 {%- if grains['os_family']|lower == 'debian' %}
-{%- if grains["oscodename"]|lower == 'jessie' and "version" not in docker%}
 docker package repository:
   pkgrepo.managed:
-    - name: deb http://http.debian.net/debian jessie-backports main
-{%- else %}
-  {%- if "version" in docker %}
-    {%- if (docker.version|string).startswith('1.7.') %}
-      {%- set use_old_repo = docker.version < '1.7.1' %}
-    {%- else %}
-      {%- set version_major = (docker.version|string).split('.')[0]|int %}
-      {%- set version_minor = (docker.version|string).split('.')[1]|int %}
-      {%- set old_repo_major = 1 %}
-      {%- set old_repo_minor = 7 %}
-      {%- set use_old_repo = (version_major < old_repo_major or (version_major == old_repo_major and version_minor < old_repo_minor)) %}
-    {%- endif %}
-  {%- endif %}
-
-{%- if "version" in docker and use_old_repo %}
-docker package repository:
-  pkgrepo.managed:
-    - name: deb https://get.docker.com/ubuntu docker main
-    - humanname: Old Docker Package Repository
-    - keyid: d8576a8ba88d21e9
-    - keyserver: {% docker.repo_keyserver %}
-{%- else %}
-purge old packages:
-  pkgrepo.absent:
-    - name: deb https://get.docker.com/ubuntu docker main
-  pkg.purged:
-    - pkgs: 
-      - lxc-docker*
-      - docker.io*
-    - require_in:
-      - pkgrepo: docker package repository
-
-docker package repository:
-  pkgrepo.managed:
-    - name: {% docker.repo_name %}
-    - humanname: {% docker.repo_humanname %}
-{% if docker.repo_keyurl %}
-    - keyurl: {% docker.repo_keyurl %}
-{% else %}
-    - keyid: {% docker.repo_keyid %}
-    - keyserver: {% docker.repo_keyserver %}
-{%- endif %}
-    - file: {% docker.repo_file %}
+    - name: deb {{ docker.repo_name }} {{ grains["oscodename"]|lower }} {{ docker.repo_component }}
+    - humanname: {{ grains["os"] }} {{ grains["oscodename"]|capitalize }} Docker Package Repository
+    - key_url: {{ docker.repo_keyurl }}
+    - file: {{ docker.repo_file }}
     - refresh_db: True
-{%- endif %}
-
 {%- elif grains['os_family']|lower == 'redhat' and (grains['os']|lower != 'amazon' and grains['os']|lower != 'fedora') %}
 docker package repository:
   pkgrepo.managed:
@@ -80,40 +38,40 @@ docker package repository:
 docker package:
   {%- if "version" in docker %}
   pkg.installed:
-    {%- if grains["oscodename"]|lower == 'jessie' and "version" not in docker %}
-    - name: docker.io
+    - name: docker-ce
     - version: {{ docker.version }}
-    {%- elif use_old_repo %}
-    - name: lxc-docker-{{ docker.version }}
-    {%- else %}
-    {%- if grains['os']|lower == 'amazon' or grains['os']|lower == 'fedora' %}
-    - name: docker
-    {%- else %}
-    - name: docker-engine
-    {%- endif %}
-    - version: {{ docker.version }}
-    {%- endif %}
     - hold: True
   {%- else %}
   pkg.latest:
-    {%- if grains["oscodename"]|lower == 'jessie' and "version" not in docker %}
-    - name: docker.io
-    {%- else %}
-    {%- if grains['os']|lower == 'amazon' or grains['os']|lower == 'fedora'%}
-    - name: docker
-    {%- else %}
-    - name: docker-engine
-    {%- endif %}
-    {%- endif %}
+    - name: docker-ce
   {%- endif %}
     - refresh: {{ docker.refresh_repo }}
     - require:
       - pkg: docker package dependencies
-      {%- if grains['os']|lower != 'amazon' and grains['os']|lower != 'fedora' %}
       - pkgrepo: docker package repository
-      {%- endif %}
       - file: docker-config
 
+
+{% if grains["init"] == 'systemd' %}
+docker-systemd-service-conf:
+  file.managed:
+    - name: /etc/systemd/system/docker.service
+    - source: salt://docker/files/service.conf
+
+docker-config-directory:
+  file.directory:
+    - name: /etc/docker
+
+docker-config:
+  file.managed:
+    - name: /etc/docker/daemon.json
+    - source: salt://docker/files/daemon.json
+    - template: jinja
+    - mode: 644
+    - user: root
+    - require:
+      - file: docker-config-directory
+{% else %}
 docker-config:
   file.managed:
     - name: /etc/default/docker
@@ -121,13 +79,18 @@ docker-config:
     - template: jinja
     - mode: 644
     - user: root
+{% endif %}
 
 docker-service:
   service.running:
     - name: docker
     - enable: True
     - watch:
+{% if grains["init"] == 'systemd' %}
+      - file: /etc/docker/daemon.json
+{% else %}
       - file: /etc/default/docker
+{% endif %}
       - pkg: docker package
     {% if "process_signature" in docker %}
     - sig: {{ docker.process_signature }}

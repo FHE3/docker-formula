@@ -1,8 +1,6 @@
 ---
 driver:
-  name: docker
-  use_sudo: false
-  privileged: true
+  name: vagrant
 
 provisioner:
   name: salt_solo
@@ -15,14 +13,10 @@ provisioner:
         - docker
 
 platforms:
-  - name: ubuntu-14.04
-  - name: debian-jessie
-    driver_config:
-      run_command: /sbin/init
+  - name: bento/debian-8.9
 
 suites:
-  - name: default
-  - name: version-1.12.2
+  - name: version-17.09
     provisioner:
       pillars:
         top.sls:
@@ -31,7 +25,11 @@ suites:
               - docker
         docker.sls:
           docker:
-            version: '1.12.2*'
+            lookup:
+              version: 17.06.2~ce-0~debian
+              repo_name: http://mirror-ka.i.fhe3.net/docker/debian/
+              repo_keyurl: http://mirror-ka.i.fhe3.net/docker/debian/gpg
+              repo_component: stable
 
 verifier:
   name: shell
