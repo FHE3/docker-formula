@@ -8,6 +8,7 @@ docker:
   config: []
   daemon:
     bip: "171.17.0.1/16"
-    fixed_cidr: "172.17.0.0/16"
-    host: "[\"fd://\"]"
-    tls: "false"
+    fixed-cidr: "172.17.0.0/16"
+    hosts:
+      - "fd://"
+    tls: false

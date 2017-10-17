@@ -71,10 +71,10 @@ docker-config-directory:
     - name: /etc/docker
 
 docker-config:
-  file.managed:
+  file.serialize:
     - name: /etc/docker/daemon.json
-    - source: salt://docker/files/daemon.json
-    - template: jinja
+    - dataset: {{ docker.daemon }}
+    - formatter: json
     - mode: 644
     - user: root
     - require:
