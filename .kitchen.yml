@@ -30,6 +30,13 @@ suites:
               repo_name: http://mirror-ka.i.fhe3.net/docker/debian/
               repo_keyurl: http://mirror-ka.i.fhe3.net/docker/debian/gpg
               repo_component: stable
+              daemon:
+                bip: "10.99.0.1/16"
+                fixed-cidr: "10.99.1.0/24"
+                hosts:
+                  - "fd://"
+                  - "{{ salt['grains.get']('fqdn') }}"
+                tls: false
 
 verifier:
   name: shell
