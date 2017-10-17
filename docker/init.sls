@@ -50,6 +50,9 @@ docker package:
       - pkg: docker package dependencies
       - pkgrepo: docker package repository
       - file: docker-config
+      {% if grains["init"] == 'systemd' %}
+      - file: docker-systemd-service-conf
+      {% endif %}
 
 
 {% if grains["init"] == 'systemd' %}
@@ -57,6 +60,11 @@ docker-systemd-service-conf:
   file.managed:
     - name: /etc/systemd/system/docker.service
     - source: salt://docker/files/service.conf
+
+service.systemctl_reload:
+  module.run:
+    - onchanges:
+      - file: docker-systemd-service-conf
 
 docker-config-directory:
   file.directory:
