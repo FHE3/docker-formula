@@ -14,6 +14,7 @@ provisioner:
 
 platforms:
   - name: bento/debian-8.9
+  - name: bento/debian-9.2
 
 suites:
   - name: version-17.09
@@ -26,7 +27,7 @@ suites:
         docker.sls:
           docker:
             lookup:
-              version: 17.06.2~ce-0~debian
+              version: 17.09.1~ce-0~debian
               repo_name: http://mirror-ka.i.fhe3.net/docker/debian/
               repo_keyurl: http://mirror-ka.i.fhe3.net/docker/debian/gpg
               repo_component: stable
@@ -41,4 +42,4 @@ suites:
 verifier:
   name: shell
   remote_exec: false
-  command: testinfra -vvv --connection=docker --hosts=root@$KITCHEN_CONTAINER_ID --junit-xml junit-$KITCHEN_INSTANCE.xml test/integration/$KITCHEN_SUITE
+  command: pytest -vvv --connection=docker --hosts=root@$KITCHEN_CONTAINER_ID --junit-xml junit-$KITCHEN_INSTANCE.xml test/integration/$KITCHEN_SUITE
