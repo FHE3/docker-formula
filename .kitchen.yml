@@ -38,7 +38,39 @@ suites:
                   - "fd://"
                   - "{{ salt['grains.get']('fqdn') }}"
                 tls: false
-
+  - name: container
+    provisioner:
+      state_top:
+        base:
+          '*':
+            - docker
+            - docker.containers
+      pillars:
+        top.sls:
+          base:
+            '*':
+              - docker
+        docker.sls:
+          docker:
+            lookup:
+              version: 17.09.1~ce-0~debian
+              repo_name: http://mirror-ka.i.fhe3.net/docker/debian/
+              repo_keyurl: http://mirror-ka.i.fhe3.net/docker/debian/gpg
+              repo_component: stable
+              daemon:
+                bip: "10.99.0.1/16"
+                fixed-cidr: "10.99.1.0/24"
+                hosts:
+                  - "fd://"
+                  - "{{ salt['grains.get']('fqdn') }}"
+                tls: false
+          docker-containers:
+            lookup:
+              helloworld:
+                image: "dockercloud/hello-world"
+                cmd:
+                runoptions:
+                  - "-p 5000:80"
 verifier:
   name: shell
   remote_exec: false
