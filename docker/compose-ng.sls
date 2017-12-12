@@ -1,24 +1,16 @@
 {%- from "docker/map.jinja" import compose with context %}
+{%- from "docker/map.jinja" import volumes with context %}
 {%- for name, container in compose.items() %}
   {%- set id = container.container_name|d(name) %}
   {%- set required_containers = [] %}
 {{id}} image:
-  docker.pulled:
-  {%- if ':' in container.image %}
-    {%- set image = container.image.split(':',1) %}
-    - name: {{image[0]}}
-    - tag: {{image[1]}}
-  {%- else %}
+  dockerng.image_present:
     - name: {{container.image}}
-  {%- endif %}
 
 {{id}} container:
-  {%- if 'dvc' in container and container.dvc %}
-  docker.installed:
-  {%- else %}
   docker.running:
-  {%- endif %}
     - name: {{id}}
+    - hostname: {{id}}
     - image: {{container.image}}
   {%- if 'command' in container %}
     - command: {{container.command}}
@@ -46,10 +38,22 @@
       {%- endif %}
     {%- endfor %}
   {%- endif %}
+  {%- if 'port_bindings' in container %}
+    - port_bindings:
+    {%- for port_binding in container.port_bindings %}
+      - {{port_binding}}
+    {%- endfor %}
+  {%- endif %}
   {%- if 'volumes' in container %}
     - volumes:
     {%- for volume in container.volumes %}
       - {{volume}}
+    {%- endfor %}
+  {%- endif %}
+  {%- if 'binds' in container %}
+    - binds:
+    {%- for bind in container.binds %}
+      - {{bind}}
     {%- endfor %}
   {%- endif %}
   {%- if 'volumes_from' in container %}
@@ -76,10 +80,16 @@
     {%- endif %}
   {%- endif %}
     - require:
-      - docker: {{id}} image
+      - dockerng: {{id}} image
   {%- if required_containers is defined %}
     {%- for containerid in required_containers %}
       - docker: {{containerid}}
     {%- endfor %}
   {%- endif %}
+{% endfor %}
+
+{%- for name, options in volumes.iteritems() %}
+volume_{{name}}:
+  dockerng.volume_present:
+    - name: {{name}}
 {% endfor %}

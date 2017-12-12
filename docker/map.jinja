@@ -43,3 +43,5 @@
 }, grain='os_family', merge=salt['pillar.get']('docker:lookup', default=defaults.docker, merge=True)) %}
 
 {% set compose = salt['pillar.get']('docker:compose', default={}, merge=True) %}
+
+{% set volumes = salt['pillar.get']('docker:volumes', default={}, merge=True) %}

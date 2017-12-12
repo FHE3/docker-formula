@@ -122,9 +122,9 @@ docker-py:
     {%- if "python_package" in docker %}
     - name: {{ docker.python_package }}
     {%- elif "pip_version" in docker %}
-    - name: docker-py {{ docker.pip_version }}
+    - name: docker {{ docker.pip_version }}
     {%- else %}
-    - name: docker-py
+    - name: docker
     {%- endif %}
     - reload_modules: true
 {% endif %}

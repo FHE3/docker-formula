@@ -3,7 +3,7 @@
 docker:
   process_signature: '/usr/bin/docker'
   python_pip_package: 'python-pip'
-  install_docker_py: False
+  install_docker_py: True
   refresh_repo: True
   config: []
   daemon:
