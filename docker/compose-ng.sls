@@ -8,7 +8,7 @@
     - name: {{container.image}}
 
 {{id}} container:
-  docker.running:
+  dockerng.running:
     - name: {{id}}
     - hostname: {{id}}
     - image: {{container.image}}
@@ -72,18 +72,13 @@
     {%- endfor %}
   {%- endif %}
   {%- if 'restart' in container %}
-    - restart_policy:
-    {%- set policy = container.restart.split(':',1) %}
-        Name: {{policy[0]}}
-    {%- if policy|length > 1 %}
-        MaximumRetryCount: {{policy[1]}}
-    {%- endif %}
+    - restart_policy: {{container.restart}}
   {%- endif %}
     - require:
       - dockerng: {{id}} image
   {%- if required_containers is defined %}
     {%- for containerid in required_containers %}
-      - docker: {{containerid}}
+      - dockerng: {{containerid}}
     {%- endfor %}
   {%- endif %}
 {% endfor %}
