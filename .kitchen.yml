@@ -128,6 +128,7 @@ suites:
                 links:
                   - postgres:postgres
               nginx:
+                restart: always
                 image: nginx:1.11-alpine
                 command: nginx -g 'daemon off;' -c /etc/netbox-nginx/nginx.conf
                 depends_on:
