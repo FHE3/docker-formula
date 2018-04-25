@@ -68,7 +68,7 @@
     {%- for link in container.links %}
       {%- set name, alias = link.split(':',1) %}
       {%- do required_containers.append(name) %}
-        {{name}}: {{alias}}
+        - {{name}}: {{alias}}
     {%- endfor %}
   {%- endif %}
   {%- if 'restart' in container %}
