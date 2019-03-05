@@ -1,23 +1,49 @@
+{%- from "docker/map.jinja" import docker with context %}
 {%- from "docker/map.jinja" import compose with context %}
 {%- from "docker/map.jinja" import volumes with context %}
+
+include:
+  - docker.compose
+
 {%- for name, container in compose.items() %}
   {%- set id = container.container_name|d(name) %}
   {%- set required_containers = [] %}
+    {%- if grains['saltversioninfo'] >= [2017, 7, 0]  %}
+{{id}}:
+  docker_image.present:
+    - force: {{ docker.containers.force_present }}
+    {%- else %}
 {{id}} image:
-  dockerng.image_present:
+  docker.pulled:
+    {%- endif %}
+  {%- if ':' in container.image %}
+    {%- set image = container.image.split(':',1) %}
+    - name: {{image[0]}}
+    - tag: {{image[1]}}
+  {%- else %}
     - name: {{container.image}}
+  {%- endif %}
 
 {{id}} container:
-  dockerng.running:
+     {%- if grains['saltversioninfo'] >= [2017, 7, 0] %}
+  docker_container.running:
+    - skip_translate: {{ docker.containers.skip_translate }}
+    - force: {{ docker.containers.force_running }}
+     {%- else %}
+       {%- if 'dvc' in container and container.dvc %}
+  docker.installed:
+       {%- else %}
+  docker.running:
+       {%- endif %}
+     {%- endif %}
     - name: {{id}}
-    - hostname: {{id}}
     - image: {{container.image}}
   {%- if 'command' in container %}
     - command: {{container.command}}
   {%- endif %}
   {%- if 'environment' in container and container.environment is iterable %}
     - environment:
-    {%- for variable, value in container.environment.iteritems() %}
+    {%- for variable, value in container.environment.items() %}
         - {{variable}}: {{value}}
     {%- endfor %}
   {%- endif %}
@@ -38,22 +64,10 @@
       {%- endif %}
     {%- endfor %}
   {%- endif %}
-  {%- if 'port_bindings' in container %}
-    - port_bindings:
-    {%- for port_binding in container.port_bindings %}
-      - {{port_binding}}
-    {%- endfor %}
-  {%- endif %}
   {%- if 'volumes' in container %}
     - volumes:
     {%- for volume in container.volumes %}
       - {{volume}}
-    {%- endfor %}
-  {%- endif %}
-  {%- if 'binds' in container %}
-    - binds:
-    {%- for bind in container.binds %}
-      - {{bind}}
     {%- endfor %}
   {%- endif %}
   {%- if 'volumes_from' in container %}
@@ -68,17 +82,30 @@
     {%- for link in container.links %}
       {%- set name, alias = link.split(':',1) %}
       {%- do required_containers.append(name) %}
-        - {{name}}: {{alias}}
+        {{name}}: {{alias}}
     {%- endfor %}
   {%- endif %}
   {%- if 'restart' in container %}
-    - restart_policy: {{container.restart}}
+    - restart_policy:
+    {%- set policy = container.restart.split(':',1) %}
+        Name: {{policy[0]}}
+    {%- if policy|length > 1 %}
+        MaximumRetryCount: {{policy[1]}}
+    {%- endif %}
   {%- endif %}
     - require:
-      - dockerng: {{id}} image
+         {%- if grains['saltversioninfo'] >= [2017, 7, 0] %}
+      - docker_image: {{id}}
+         {%- else %}
+      - docker: {{id}} image
+         {%- endif %}
   {%- if required_containers is defined %}
     {%- for containerid in required_containers %}
-      - dockerng: {{containerid}}
+         {%- if grains['saltversioninfo'] >= [2017, 7, 0] %}
+      - docker_image: {{containerid}}
+         {%- else %}
+      - docker: {{containerid}}
+         {%- endif %}
     {%- endfor %}
   {%- endif %}
 {% endfor %}

@@ -1,10 +1,12 @@
 {% from "docker/map.jinja" import docker with context %}
-{% if docker.kernel is defined %}
+
+{% set docker_pkg_name = docker.pkg.old_name if docker.use_old_repo else docker.pkg.name %}
+{% set docker_pkg_version = docker.version | default(docker.pkg.version) %}
 include:
   - .kernel
-{% endif %}
+  - .repo
 
-docker package dependencies:
+docker-package-dependencies:
   pkg.installed:
     - pkgs:
       {%- if grains['os_family']|lower == 'debian' %}
@@ -13,80 +15,56 @@ docker package dependencies:
       {%- endif %}
       - iptables
       - ca-certificates
+      {% if docker.kernel.pkgs is defined %}
+        {% for pkg in docker.kernel.pkgs %}
+        - {{ pkg }}
+        {% endfor %}
+      {% endif %}
+    - unless: test "`uname`" = "Darwin"
 
-{%- if grains['os_family']|lower == 'debian' %}
-docker package repository:
-  pkgrepo.managed:
-    - name: deb {{ docker.repo_name }} {{ grains["oscodename"]|lower }} {{ docker.repo_component }}
-    - humanname: {{ grains["os"] }} {{ grains["oscodename"]|capitalize }} Docker Package Repository
-    - key_url: {{ docker.repo_keyurl }}
-    - file: {{ docker.repo_file }}
-    - refresh_db: True
-{%- elif grains['os_family']|lower == 'redhat' and (grains['os']|lower != 'amazon' and grains['os']|lower != 'fedora') %}
-docker package repository:
-  pkgrepo.managed:
-    - name: docker
-    - baseurl: https://yum.dockerproject.org/repo/main/centos/$releasever/
-    - gpgcheck: 1
-    - gpgkey: https://yum.dockerproject.org/gpg
-    - require_in:
-      - pkg: docker package
-    - require:
-      - pkg: docker package dependencies
-{%- endif %}
-
-docker package:
-  {%- if "version" in docker %}
+docker-package:
   pkg.installed:
-    - name: docker-ce
-    - version: {{ docker.version }}
-    - hold: True
-  {%- else %}
-  pkg.latest:
-    - name: docker-ce
-  {%- endif %}
+    - name: {{ docker_pkg_name }}
+    - version: {{ docker_pkg_version }}
     - refresh: {{ docker.refresh_repo }}
     - require:
-      - pkg: docker package dependencies
-      - pkgrepo: docker package repository
-      - file: docker-config
-      {% if grains["init"] == 'systemd' %}
-      - file: docker-systemd-service-conf
-      {% endif %}
-
-
-{% if grains["init"] == 'systemd' %}
-docker-systemd-service-conf:
-  file.managed:
-    - name: /etc/systemd/system/docker.service
-    - source: salt://docker/files/service.conf
-
-service.systemctl_reload:
-  module.run:
-    - onchanges:
-      - file: docker-systemd-service-conf
-
-docker-config-directory:
-  file.directory:
-    - name: /etc/docker
-
-docker-config:
-  file.serialize:
-    - name: /etc/docker/daemon.json
-    - dataset: {{ docker.daemon }}
-    - formatter: json
-    - mode: 644
-    - user: root
+      - pkg: docker-package-dependencies
+      {%- if grains['os']|lower not in ('amazon', 'fedora', 'suse',) %}
+      - pkgrepo: docker-package-repository
+      {%- endif %}
+    - refresh: {{ docker.refresh_repo }}
     - require:
-      - file: docker-config-directory
-{% else %}
+      - pkg: docker-package-dependencies
+      {%- if grains['os']|lower not in ('amazon', 'fedora', 'suse',) %}
+      - pkgrepo: docker-package-repository
+      {%- endif %}
+    - require_in:
+
 docker-config:
   file.managed:
-    - name: /etc/default/docker
+    - name: {{ docker.configfile }}
     - source: salt://docker/files/config
     - template: jinja
     - mode: 644
     - user: root
+
+{% if docker.daemon_config %}
+docker-daemon-dir:
+  file.directory:
+    - name: /etc/docker
+    - user: root
+    - group: root
+    - mode: 755
+
+docker-daemon-config:
+  file.serialize:
+    - name: /etc/docker/daemon.json
+    - user: root
+    - group: root
+    - mode: 644
+    - dataset:
+        {{ docker.daemon_config | yaml() | indent(8) }}
+    - formatter: json
 {% endif %}
 
 docker-service:
@@ -94,38 +72,35 @@ docker-service:
     - name: docker
     - enable: True
     - watch:
-{% if grains["init"] == 'systemd' %}
-      - file: /etc/docker/daemon.json
-{% else %}
-      - file: /etc/default/docker
-{% endif %}
-      - pkg: docker package
+      - file: docker-config
+      - pkg: docker-package
+      {% if docker.daemon_config %}
+      - file: docker-daemon-config
+      {% endif %}
     {% if "process_signature" in docker %}
     - sig: {{ docker.process_signature }}
     {% endif %}
 
-
 {% if docker.install_docker_py %}
 docker-py requirements:
   pkg.installed:
-    - name: {{ docker.python_pip_package }}
-    - install_recommends: True
+    - name: {{ docker.pip.pkgname }}
+    - onlyif: {{ not docker.install_pypi_pip }}
   pip.installed:
-    {%- if "pip" in docker and "version" in docker.pip %}
-    - name: pip {{ docker.pip.version }}
-    {%- else %}
     - name: pip
-    - upgrade: True
-    {%- endif %}
+    - onlyif: {{ docker.install_pypi_pip }}
 
 docker-py:
   pip.installed:
     {%- if "python_package" in docker %}
     - name: {{ docker.python_package }}
     {%- elif "pip_version" in docker %}
-    - name: docker {{ docker.pip_version }}
+    - name: docker-py {{ docker.pip_version }}
     {%- else %}
-    - name: docker
+    - name: docker-py
     {%- endif %}
     - reload_modules: true
+    {%- if docker.proxy %}
+    - proxy: {{ docker.proxy }}
+    {%- endif %}
 {% endif %}
