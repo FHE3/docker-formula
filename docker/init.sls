@@ -40,6 +40,17 @@ docker-package:
       {%- endif %}
     - require_in:
 
+{% if grains["init"] == 'systemd' %}
+docker-config:
+  file.managed:
+    - name: /etc/systemd/system/docker.service
+    - source: salt://docker/files/service.conf
+
+service.systemctl_reload:
+  module.run:
+    - onchanges:
+      - file: docker-config
+{% else %}
 docker-config:
   file.managed:
     - name: {{ docker.configfile }}
@@ -47,6 +58,7 @@ docker-config:
     - template: jinja
     - mode: 644
     - user: root
+{% endif %}
 
 {% if docker.daemon_config %}
 docker-daemon-dir:
