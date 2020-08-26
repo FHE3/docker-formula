@@ -47,6 +47,17 @@ docker-package:
       - pkg: docker-package-dependencies
 
   {%- if grains.os != 'MacOS' %}
+    {%- if grains["init"] == 'systemd' %}
+docker-config:
+  file.managed:
+    - name: /etc/systemd/system/docker.service
+    - source: salt://docker/files/service.conf
+
+service.systemctl_reload:
+  module.run:
+    - onchanges:
+      - file: docker-config
+{% else %}
 docker-config:
   file.managed:
     - name: {{ docker.configfile }}
@@ -60,6 +71,7 @@ docker-config:
       - pkg: docker-package
     - watch_in:
       - service: docker-service
+    {%- endif %}
   {%- endif %}
 
   {% if docker.daemon_config %}
