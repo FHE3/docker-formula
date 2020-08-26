@@ -1,10 +1,10 @@
-
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
 CentOS:
-  pip:
-    pkgname: python2-pip
+  pkgs:
+    - python2-pip
 
 FreeBSD:
-  pip:
-    pkgname: devel/py-pip
-
-# vim: ft=sls
+  pkgs:
+    - devel/py-pip

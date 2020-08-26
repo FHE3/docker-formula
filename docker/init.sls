@@ -1,7 +1,11 @@
-{% from "docker/map.jinja" import docker with context %}
+# -*- coding: utf-8 -*-
+# vim: ft=sls
+{#- Get the `tplroot` from `tpldir` #}
+{%- set tplroot = tpldir.split('/')[0] %}
+{%- from tplroot ~ "/map.jinja" import docker with context %}
+{%- set sls_package_install = tplroot ~ '.install' %}
+{%- set sls_macapp_install = tplroot ~ '.macosapp' %}
 
-{% set docker_pkg_name = docker.pkg.old_name if docker.use_old_repo else docker.pkg.name %}
-{% set docker_pkg_version = docker.version | default(docker.pkg.version) %}
 include:
   - .kernel
   - .repo
@@ -116,3 +120,4 @@ docker-py:
     - proxy: {{ docker.proxy }}
     {%- endif %}
 {% endif %}
+  - {{ sls_package_install if not docker.pkg.use_upstream_app else sls_macapp_install }}

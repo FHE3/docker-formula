@@ -1,40 +1,44 @@
-# vim: sts=2 ts=2 sw=2 et ai
-
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
 docker:
   process_signature: '/usr/bin/docker'
-  install_pypi_pip: False
-  install_docker_py: False
-  refresh_repo: True
+  install_docker_py: true
+  python_package: docker
+  refresh_repo: true
   configfile: /etc/default/docker
   config: []
   daemon_config: {}
+  version: ''
+  rootuser: root
 
-  use_upstream_repo: True
-  use_old_repo: False
-  proxy: False
+  use_upstream_repo: true
+  use_old_repo: false
+  proxy: false
 
-  # Repo parameters are set in docker/osfamilymap.yaml
+  pkgs:
+    - iptables
+    - ca-certificates
 
   pkg:
     name: docker-ce
     old_name: docker-engine
-    # For backward compatibility, this will be overriden by
-    # docker:version, if defined
+    # For backward compatibility, this will be overriden by docker:version, if defined
     version: latest
-    allow_updates: False
-    hold: False
-  pkgs: []
+    allow_updates: false
+    hold: false
+    use_upstream_app: false  # macos
 
   pip:
-    pkgname: python-pip
-    upgrade: False
+    install_pypi_pip: false
+    upgrade: false
 
-  compose_version:
+  compose_version: ''
 
   containers:
     skip_translate: None
-    force_present: False
-    force_running: False
+    force_present: false
+    force_running: false
 
   kernel:
     pkg:

@@ -1,4 +1,6 @@
-{% from "docker/map.jinja" import docker with context %}
+{#- Get the `tplroot` from `tpldir` #}
+{%- set tplroot = tpldir.split('/')[0] %}
+{%- from tplroot ~ "/map.jinja" import docker with context %}
 
 {%- if docker.kernel is defined and grains['os_family']|lower == 'debian' %}
 pkgrepo-dependencies:
@@ -6,7 +8,7 @@ pkgrepo-dependencies:
     - name: python-apt
 
   {% if "pkgrepo" in docker.kernel %}
-{{ grains["oscodename"] }}-backports-repo:
+{{ grains["oscodename"]|lower }}-backports-repo:
   pkgrepo.managed:
     {% for key, value in docker.kernel.pkgrepo.items() %}
     - {{ key }}: {{ value }}
