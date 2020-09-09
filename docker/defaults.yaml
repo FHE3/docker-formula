@@ -9,7 +9,6 @@ docker:
   configfile: /etc/default/docker
   config: []
   daemon_config: {}
-  version: ''
   rootuser: root
 
   use_upstream_repo: true
